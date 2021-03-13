@@ -1,62 +1,9 @@
-from collections import OrderedDict
-from .layers import *
 from .efficientnet import EfficientNet
-
+from .layers import *
 
 __all__ = ['EfficientUnet', 'get_efficientunet_b0', 'get_efficientunet_b1', 'get_efficientunet_b2',
            'get_efficientunet_b3', 'get_efficientunet_b4', 'get_efficientunet_b5', 'get_efficientunet_b6',
            'get_efficientunet_b7']
-
-
-def get_blocks_to_be_concat(model, x):
-    shapes = set()
-    blocks = OrderedDict()
-    hooks = []
-    count = 0
-
-    def register_hook(module):
-
-        def hook(module, input, output):
-            try:
-                nonlocal count
-                if module.name == f'blocks_{count}_output_batch_norm':
-                    count += 1
-                    shape = output.size()[-2:]
-                    if shape not in shapes:
-                        shapes.add(shape)
-                        blocks[module.name] = output
-
-                elif module.name == 'head_swish':
-                    # when module.name == 'head_swish', it means the program has already got all necessary blocks for
-                    # concatenation. In my dynamic unet implementation, I first upscale the output of the backbone,
-                    # (in this case it's the output of 'head_swish') concatenate it with a block which has the same
-                    # Height & Width (image size). Therefore, after upscaling, the output of 'head_swish' has bigger
-                    # image size. The last block has the same image size as 'head_swish' before upscaling. So we don't
-                    # really need the last block for concatenation. That's why I wrote `blocks.popitem()`.
-                    blocks.popitem()
-                    blocks[module.name] = output
-
-            except AttributeError:
-                pass
-
-        if (
-                not isinstance(module, nn.Sequential)
-                and not isinstance(module, nn.ModuleList)
-                and not (module == model)
-        ):
-            hooks.append(module.register_forward_hook(hook))
-
-    # register hook
-    model.apply(register_hook)
-
-    # make a forward pass to trigger the hooks
-    model(x)
-
-    # remove these hooks
-    for h in hooks:
-        h.remove()
-
-    return blocks
 
 
 class EfficientUnet(nn.Module):
@@ -99,7 +46,7 @@ class EfficientUnet(nn.Module):
     def forward(self, x):
         input_ = x
 
-        blocks = get_blocks_to_be_concat(self.encoder, x)
+        blocks = self.encoder(x)
         _, x = blocks.popitem()
 
         x = self.up_conv1(x)

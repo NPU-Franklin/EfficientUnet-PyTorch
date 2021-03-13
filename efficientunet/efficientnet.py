@@ -1,4 +1,7 @@
+from collections import OrderedDict
+
 from torch.hub import load_state_dict_from_url
+
 from .utils import *
 
 
@@ -123,6 +126,10 @@ class EfficientNet(nn.Module):
                 self.head_swish = Swish(name='head_swish')
 
             def forward(self, x):
+                # Dictionary of blocks to be concatenated
+                shape = []
+                blocks = OrderedDict()
+
                 # Stem
                 x = self.stem_conv(x)
                 x = self.stem_batch_norm(x)
@@ -134,12 +141,17 @@ class EfficientNet(nn.Module):
                     if drop_connect_rate:
                         drop_connect_rate *= idx / len(self.blocks)
                     x = block(x, drop_connect_rate)
+                    if x.size()[-2:] not in shape:
+                        shape.append(x.size()[-2:])
+                        blocks['blocks_{}_output_batch_norm'.format(idx)] = x
 
                 # Head
                 x = self.head_conv(x)
                 x = self.head_batch_norm(x)
                 x = self.head_swish(x)
-                return x
+                blocks.popitem()
+                blocks['head_swish'] = x
+                return blocks
 
         return Encoder()
 

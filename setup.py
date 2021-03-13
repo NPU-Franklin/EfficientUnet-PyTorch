@@ -1,9 +1,10 @@
 import os
-import sys
 import platform
-import efficientunet
+import sys
+
 from setuptools import setup, find_packages
 
+import efficientunet
 
 # "setup.py publish" shortcut.
 if sys.argv[-1] == 'publish':

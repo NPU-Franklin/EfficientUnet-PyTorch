@@ -1,7 +1,7 @@
 import re
 from collections import namedtuple
-from .layers import *
 
+from .layers import *
 
 GlobalParams = namedtuple('GlobalParams', ['batch_norm_momentum', 'batch_norm_epsilon', 'dropout_rate', 'num_classes',
                                            'width_coefficient', 'depth_coefficient', 'depth_divisor', 'min_depth',
@@ -11,7 +11,6 @@ GlobalParams.__new__.__defaults__ = (None,) * len(GlobalParams._fields)
 BlockArgs = namedtuple('BlockArgs', ['kernel_size', 'num_repeat', 'input_filters', 'output_filters', 'expand_ratio',
                                      'id_skip', 'strides', 'se_ratio'])
 BlockArgs.__new__.__defaults__ = (None,) * len(BlockArgs._fields)
-
 
 IMAGENET_WEIGHTS = {
     'efficientnet-b0': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b0-355c32eb.pth',
